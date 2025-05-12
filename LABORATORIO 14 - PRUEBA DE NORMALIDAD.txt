@@ -1,0 +1,356 @@
+
+# **Laboratorio 14. Prueba de Normalidad de un conjunto de Datos**
+## **Realizado por: escribe tu Nombre**
+____________________________________________________
+# @title **Paso 1. Nuestras Librerias**
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import seaborn as sns
+import scipy.stats as stats
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+!pip install bioinfokit &>/dev/null
+from bioinfokit.analys import stat
+from statsmodels.graphics.factorplots import interaction_plot
+
+_______________________________________________________________
+
+# @title **Paso 2. La URL de mis datos en .csv**
+url = 'https://raw.githubusercontent.com/JSEFERINO/ESTADISTICA-INFERENCIAL-2025/main/DATOS20510ULTIMOS.csv'
+
+
+_______________________________________________________________
+
+# @title **Paso 3. Definimos nuestro DataFrame**
+datos = pd.read_csv(url, delimiter=';') # Added delimiter
+
+_______________________________________________________________
+
+
+# @title **Paso 4. LLamamos a los datos**
+datos
+_______________________________________________________________
+
+# @title **Paso 5. La columna de mis Datos**
+datos.columns
+_______________________________________________________________
+
+
+# @title **Paso 6. Convierte a NRC a object**
+
+# Convert 'NRC' column to object type
+datos['NRC'] = datos['NRC'].astype(object)
+datos
+
+
+_______________________________________________________________
+
+# @title **Paso 7. Diagrama de caja y Bigotes**
+fig, ax = plt.subplots(figsize=(20, 10)) # Changed from axs to ax
+ax.set_title('PARCIAL 1 vs CURSO - Julio Hurtado') # Now using ax instead of axs[0]
+sns.boxplot(y="CURSO", x="PARCIAL 1", hue='NRC', data=datos, ax=ax) # Now using ax instead of axs[0]
+# Calculate the mean for each group
+mean_by_group = datos.groupby('CURSO')['PARCIAL 1'].mean()
+
+# Add the mean values to the plot
+# Filter out NaN values from unique courses
+for i, asignatura in enumerate(datos['CURSO'].dropna().unique()): 
+    mean_value = mean_by_group[asignatura]
+    ax.text(mean_value, i, f'{mean_value:.2f}', ha='left', va='center', color='red', fontweight='bold')
+
+_______________________________________________________________
+
+# @title **Paso 8.  Diagrama de caja y Bigotes**
+fig, ax = plt.subplots(figsize=(20, 10)) # Changed from axs to ax
+ax.set_title('PARCIAL 2 vs CURSO - Julio Hurtado') # Now using ax instead of axs[0]
+sns.boxplot(y="CURSO", x="PARCIAL 2", hue='NRC', data=datos, ax=ax) # Now using ax instead of axs[0]
+# Calculate the mean for each group
+mean_by_group = datos.groupby('CURSO')['PARCIAL 2'].mean()
+
+# Add the mean values to the plot
+for i, asignatura in enumerate(datos['CURSO'].unique()):
+  mean_value = mean_by_group[asignatura]
+  ax.text(mean_value, i, f'{mean_value:.2f}', ha='left', va='center', color='red', fontweight='bold')
+
+
+_______________________________________________________________
+
+# **Pruebas de Normalidad**
+
+### 🔹 **1. Prueba de Shapiro-Wilk**
+
+* **Uso común** en muestras pequeñas (n < 50) pero también válida para muestras mayores.
+* Es muy sensible a desviaciones de la normalidad.
+* **Hipótesis nula (H₀)**: Los datos provienen de una distribución normal.
+
+### 🔹 **2. Prueba de Kolmogórov-Smirnov (K-S)**
+
+* Compara la distribución de los datos con una distribución teórica (por ejemplo, normal).
+* Menos potente que otras pruebas para detectar desviaciones de la normalidad.
+* Puede ser ajustada con la corrección de **Lilliefors** para casos donde se estiman los parámetros de la normal.
+
+### 🔹 **3. Prueba de Anderson-Darling**
+
+* Variante de K-S que da más peso a los extremos (colas) de la distribución.
+* Más potente que K-S en muchos casos.
+* Incluye comparación con varias distribuciones teóricas, no solo la normal.
+
+### 🔹 **4. Prueba de Jarque-Bera**
+
+* Basada en los coeficientes de **asimetría** (skewness) y **curtosis** (kurtosis).
+* Útil con grandes muestras.
+* Se usa frecuentemente en economía y finanzas.
+
+### 🔹 **5. Prueba de D’Agostino y Pearson**
+
+* Combina medidas de asimetría y curtosis para evaluar normalidad.
+* Requiere muestras de tamaño moderado o grande.
+
+---
+
+### ✳️ Recomendaciones prácticas:
+
+* Para muestras pequeñas: **Shapiro-Wilk** es preferida.
+* Para muestras grandes: **D’Agostino-Pearson** o **Jarque-Bera**.
+* Siempre es útil acompañar estas pruebas con gráficos: **histograma**, **QQ-plot** o **boxplot**.
+
+¿Quieres un ejemplo en R o Python para alguna de estas pruebas?
+
+_______________________________________________________________
+
+
+# @title **Paso 9. Prueba de Normalidad Shapiro Wilks - Para el Parcial 2**
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.stats as stats
+import statsmodels.api as sm
+
+# Assuming 'datos' DataFrame is already loaded as in the previous code
+
+# Shapiro-Wilk test for 'PARCIAL 2'
+shapiro_test = stats.shapiro(datos['PARCIAL 2'].dropna()) # Drop NA values
+statistic = shapiro_test.statistic
+p_value = shapiro_test.pvalue
+
+print(f"Shapiro-Wilk Test for PARCIAL 2:")
+print(f"Statistic: {statistic}")
+print(f"P-value: {p_value}")
+
+alpha = 0.05
+if p_value > alpha:
+    decision = "No se rechaza la hipótesis nula. Los datos parecen provenir de una distribución normal."
+else:
+    decision = "Se rechaza la hipótesis nula. Los datos no parecen provenir de una distribución normal."
+
+print(decision)
+
+_______________________________________________________________
+
+# @title **Paso 10. Histograma con la distribución ideal de los Datos**
+plt.figure(figsize=(10, 6))
+plt.hist(datos['PARCIAL 2'].dropna(), bins=10, density=True, alpha=0.6, color='b', label='Datos')
+
+# Fit a normal distribution to the data
+mu, std = stats.norm.fit(datos['PARCIAL 2'].dropna())
+xmin, xmax = plt.xlim()
+x = np.linspace(xmin, xmax, 100)
+p = stats.norm.pdf(x, mu, std)
+plt.plot(x, p, 'k', linewidth=2, label='Normal ideal')
+
+plt.title('Histograma de PARCIAL 2 con Distribución Normal Ideal - Julio Hurtado')
+plt.xlabel('PARCIAL 2')
+plt.ylabel('Frecuencia')
+plt.legend()
+plt.show()
+
+# QQ-plot
+plt.figure(figsize=(8, 6))
+stats.probplot(datos['PARCIAL 2'].dropna(), dist="norm", plot=plt)
+plt.title('Gráfico QQ de PARCIAL 2 - Julio Hurtado')
+plt.show()
+
+
+_______________________________________________________________
+
+REPITE EL PASO 9 Y EL PASO 10 PARA LA VARIABLE ESTATURA
+
+_______________________________________________________________
+
+# @title **Paso 13. Prueba de Kolmogorov-Smirnov para PARCIAL 2**
+ks_test = stats.kstest(datos['PARCIAL 2'].dropna(), 'norm')
+statistic = ks_test.statistic
+p_value = ks_test.pvalue
+
+print(f"\nKolmogorov-Smirnov Test for PARCIAL 2:")
+print(f"Statistic: {statistic}")
+print(f"P-value: {p_value}")
+
+alpha = 0.05
+if p_value > alpha:
+    decision = "No se rechaza la hipótesis nula. Los datos parecen provenir de una distribución normal."
+else:
+    decision = "Se rechaza la hipótesis nula. Los datos no parecen provenir de una distribución normal."
+
+print(decision)
+
+_______________________________________________________________
+
+# @title **Paso 14. Ojiva con la distribución ideal y la Ojiva acumulada de los Datos**
+
+# ECDF plot with ideal normal distribution
+from statsmodels.distributions.empirical_distribution import ECDF
+
+plt.figure(figsize=(10, 6))
+
+# Calculate ECDF for the data
+ecdf = ECDF(datos['PARCIAL 2'].dropna())
+plt.step(ecdf.x, ecdf.y, label='ECDF de los datos')
+
+
+# Plot the ideal normal distribution
+mu, std = stats.norm.fit(datos['PARCIAL 2'].dropna())
+x = np.linspace(min(datos['PARCIAL 2'].dropna()), max(datos['PARCIAL 2'].dropna()), 100)
+plt.plot(x, stats.norm.cdf(x, loc=mu, scale=std), label='Distribución normal ideal')
+
+plt.title('ECDF de PARCIAL 2 vs Distribución Normal Ideal')
+plt.xlabel('PARCIAL 2')
+plt.ylabel('Función de Distribución Empírica (ECDF)')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+_______________________________________________________________
+
+
+REPITE EL PASO 13 Y EL PASO 14 PARA LA VARIABLE ESTATURA
+
+
+_______________________________________________________________
+
+# @title **Paso 15. Prueba de Shapiro-Wilk 'CURSO' vs 'PARCIAL 2'**
+from scipy.stats import shapiro
+
+for curso in datos['CURSO'].unique():
+    subset = datos[datos['CURSO'] == curso]['PARCIAL 2'].dropna()
+    if len(subset) >= 3:  # Shapiro-Wilk requires at least 3 data points
+        shapiro_test = shapiro(subset)
+        statistic = shapiro_test.statistic
+        p_value = shapiro_test.pvalue
+
+        print(f"Shapiro-Wilk Test for PARCIAL 2 in curso: {curso}")
+        print(f"Statistic: {statistic}")
+        print(f"P-value: {p_value}")
+
+        alpha = 0.05
+        if p_value > alpha:
+            decision = "No se rechaza la hipótesis nula. Los datos parecen provenir de una distribución normal."
+        else:
+            decision = "Se rechaza la hipótesis nula. Los datos no parecen provenir de una distribución normal."
+        print(decision)
+
+
+        # Plotting for each course
+        plt.figure(figsize=(10, 6))
+        plt.hist(subset, bins=10, density=True, alpha=0.6, color='b', label='Datos')
+        mu, std = stats.norm.fit(subset)
+        xmin, xmax = plt.xlim()
+        x = np.linspace(xmin, xmax, 100)
+        p = stats.norm.pdf(x, mu, std)
+        plt.plot(x, p, 'k', linewidth=2, label='Normal ideal')
+        plt.title(f'Histograma de PARCIAL 2 para el curso: {curso}')
+        plt.xlabel('PARCIAL 2')
+        plt.ylabel('Frecuencia')
+        plt.legend()
+
+        #Shaded regions
+        # Calculate the confidence interval
+        confidence_interval = stats.norm.interval(0.95, loc=mu, scale=std) #95% confidence
+
+        # Plot the confidence interval as a shaded region
+        x_ci = np.linspace(confidence_interval[0], confidence_interval[1], 100)
+        p_ci = stats.norm.pdf(x_ci, mu, std)
+        plt.fill_between(x_ci, p_ci, color='skyblue', alpha=0.5, label='Intervalo de Confianza (95%)')
+        plt.legend()
+
+        plt.show()
+
+        #QQplot
+        plt.figure(figsize=(8, 6))
+        stats.probplot(subset, dist="norm", plot=plt)
+        plt.title(f'Gráfico QQ de PARCIAL 2 para el curso: {curso}')
+        plt.show()
+
+    else:
+        print(f"No se puede realizar la prueba de Shapiro-Wilk para el curso {curso} (menos de 3 datos).")
+
+
+_______________________________________________________________
+
+
+REPITE EL PASO 15 PARA LA VARIABLE 'CURSO' vs 'ESTATURA'
+
+_______________________________________________________________
+
+
+_______________________________________________________________
+
+
+
+_______________________________________________________________
+
+
+
+_______________________________________________________________
+
+
+
+_______________________________________________________________
+
+
+_______________________________________________________________
+
+
+
+_______________________________________________________________
+
+
+
+_______________________________________________________________
+
+
+
+_______________________________________________________________
+
+
+
+_______________________________________________________________
+
+
+_______________________________________________________________
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
