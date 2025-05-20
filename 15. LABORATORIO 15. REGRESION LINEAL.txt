@@ -1,0 +1,645 @@
+________________________________________________________________
+Copia Texto
+
+# **Laboratorio 15. Regresión Lineal - Varios Métodos**
+<a name="inicio"></a>
+
+## **Por xxxxx**
+# [Parte I. Librerias y Datos](#parte-i-librerias-y-datos)
+# [Parte II. Regresión Lineal Usando - optimize.curve_fit](#parte-i-i-.--regresión-lineal-usando--optimize-curve_fit)
+# [Parte III. Regresión Lineal Usando - Minimos Cuadrados](#parte-iii-regresión-lineal--usando--minimos-cuadrados)
+# [Parte IV. Regresión Lineal Usando - Machine Learning](#parte-iv-regresión-lineal--usando--machine-learning)
+____________________________________________________________________
+
+Copia Texto
+
+# **Parte I. Librerias y Datos**
+<a name="parte-i-librerias-y-datos"></a>
+____________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 1. Nuestras librerias mas usadas**
+import numpy as np
+from numpy.linalg import inv
+import pandas as pd # para manejar los datos
+import matplotlib.pyplot as plt # Para visualizar los datos
+import random
+import seaborn as sns
+from sklearn.metrics import r2_score
+
+______________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 2. Ubicando nuestros datos**
+url = 'https://raw.githubusercontent.com/JSEFERINO/MISALUMNOS20252/main/DATOS202460ULTIMOS.csv'
+
+#https://github.com/JSEFERINO/MISALUMNOS20252/blob/main/DATOS202460ULTIMOS.csv
+______________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 3.  Construyendo nuestro DataFrame**
+datos = pd.read_csv(url, delimiter=';') # Added delimiter
+datos
+
+______________________________________________________________________
+Copia codigo
+
+# @title **Paso 4.  Elmina las filas NAN**
+
+datos = datos.dropna()
+datos
+______________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 5.  Vamos hallar la Matriz de Correlaciones de nuestra data**
+# Seleccionar solo las columnas numéricas para calcular la correlación
+datos2 = datos.select_dtypes(include=np.number)
+datos2
+
+
+______________________________________________________________________
+
+Copia codigo
+
+
+# @title **Paso 6.  Calcular la matriz de correlación en el DataFrame numérico**
+datos2.corr().round(2)
+
+______________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 7.  Lista los pares de variable con mayor correlacion**
+
+correlation_matrix = datos2.corr().abs()
+# Eliminar la diagonal (correlación de una variable consigo misma)
+np.fill_diagonal(correlation_matrix.values, 0)
+
+# Desapilar la matriz para obtener pares de variables y sus correlaciones
+stacked_corr = correlation_matrix.stack()
+
+# Ordenar por correlación descendente
+sorted_corr = stacked_corr.sort_values(ascending=False)
+
+# Mostrar los pares con mayor correlación (ej. top 10)
+print("Pares de variables con mayor correlación:")
+print(sorted_corr.head(10))
+______________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 8.  Lista los pares de variable con mayor Covarianza**
+
+correlation_matrix = datos2.corr().abs()
+# Eliminar la diagonal (correlación de una variable consigo misma)
+np.fill_diagonal(correlation_matrix.values, 0)
+
+# Desapilar la matriz para obtener pares de variables y sus correlaciones
+stacked_corr = correlation_matrix.stack()
+
+# Ordenar por correlación descendente
+sorted_corr = stacked_corr.sort_values(ascending=False)
+
+# Mostrar los pares con mayor correlación (ej. top 10)
+print("Pares de variables con mayor correlación:")
+print(sorted_corr.head(10))
+______________________________________________________________________
+
+Copia Texto
+
+[⬆️ Volver al inicio](#inicio)
+
+______________________________________________________________________
+Copia Texto
+
+# **Parte II. Regresión Lineal Usando - optimize.curve_fit**
+
+<a name="parte-i-i-.--regresión-lineal-usando--optimize-curve_fit"></a>
+
+____________________________________________________________________
+
+Copia codigo
+# @title **Paso 9. Empecemos la Regresión Lineal - `optimize.curve_fit`**
+datax = datos2['ESTATURA']
+datay = datos2['PESO']
+
+def f( x, p0, p1):
+    return p0 + p1*x
+
+def ff(x, p):
+    return f(x, *p)
+
+# Estos son los verdaderos parámetros
+p0 = 1.0
+p1 = 1.0
+
+
+# Estas son conjeturas iniciales para ajustes:
+pstart = [
+    p0 + random.random(),
+    p1 + random.random(),
+
+]
+
+______________________________________________________________________
+
+Copia codigo
+# @title **Paso 10.  Optimizar la Curva de ajuste - `optimize.curve_fit`**
+from scipy import optimize
+err_stdev = 0.2
+def fit_curvefit(p0, datax, datay, function, yerr=err_stdev, **kwargs):# Definimos los parametros de nuestra función
+    """
+    Nota: Según la documentación actual (Scipy V1.1.0), sigma (yerr) debe ser:
+         Ninguno o secuencia de longitud M o matriz MxM, opcional
+     Por lo tanto, reemplace:
+         err_stdev = 0.2
+     Con:
+         err_stdev = [0.2 para elemento en xdata]
+     O similar, para crear una secuencia de longitud M para este ejemplo.
+    """
+    pfit3, pcov = optimize.curve_fit(f,datax,datay,p0=p0, sigma=None, epsfcn=0.0001, **kwargs) # usamos el metodo de curva fit
+
+# ajustamos los datos y residuos
+    error = []
+    for i in range(len(pfit3)):
+        try:
+            error.append(np.absolute(pcov[i][i])**0.5)
+        except:
+            error.append( 0.00 )
+    pfit_curvefit = pfit3
+    perr_curvefit = np.array(error)
+
+    return pfit_curvefit, perr_curvefit
+    print('Algunas visualizaciones de lo construido hasta ahora:')
+    print('Lo almacenado en pfit_curvefit es ', pfit_curvefit)
+    print('Lo almacenado en perr_curvefit =',perr_curvefit)
+
+
+
+pfit3, perr = fit_curvefit(pstart, datax, datay, ff)
+
+print("\n# Fit parameters and parameter errors from curve_fit method :")
+print("pfit = ", pfit3)
+print("perr = ", perr)
+________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 11.  Bondad de Ajuste $R^2$ para el método de regresión `curve.fit`**
+from sklearn.metrics import r2_score
+r2 = r2_score(datay, f( datax, *pfit3))
+print('El coeficiente de Bondad de Ajuste o de Determinación del modelo R_cuadrado = ', round(r2,3))
+print('Esto es, el modelo explica la variabilidad observada en la respuesta en un porcentaje de ', round(r2*100,1), '%')
+______________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 12.  Diagrama de Dispersión y curva `perfect fit`**
+plt.figure(figsize=(30,6))
+plt.subplot(131)
+plt.scatter(datax,datay,label="data2")
+x0=datax #np.linspace(data["G3"].min(),data["G3"].max(),7)
+plt.plot(x0,f(x0,*pfit3),color="r",label="perfect fit")
+plt.xlabel("ESTATURA")
+plt.ylabel("PESO")
+plt.legend()
+plt.show()
+
+
+______________________________________________________________________
+
+Copia Texto
+
+[⬆️ Volver al inicio](#inicio1)
+
+____________________________________________________________________
+
+
+Copia Texto
+
+# **Parte III. Regresión Lineal Usando - Minimos Cuadrados**
+<a name="parte-iii-regresión-lineal--usando--minimos-cuadrados"></a>  
+
+____________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 13.  Regresión lineal - MINIMOS CUADRADOS - Least Squares**
+import statsmodels.api as sm
+from statsmodels.tools.eval_measures import rmse
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+____________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 14.  Regresión lineal - MINIMOS CUADRADOS - OLS**
+# nuestras variables independiente y dependiente
+
+X = datos2['ESTATURA']
+y = datos2['PESO']
+
+# para obtener intercepción -- esto es opcional
+
+X = sm.add_constant(X)
+
+# ajustar el modelo de regresión
+
+reg = sm.OLS(y, X).fit()
+reg.summary()
+______________________________________________________________________
+
+Copia codigo
+# @title **Paso 15.  Hacer el grafico de Dispersión pero usando Minimos cuadrados:**
+
+# Plotting using the OLS results from Paso 13
+plt.figure(figsize=(30,6))
+plt.subplot(131)
+
+
+plt.scatter(datax, datay, label="data")
+
+
+p0_ols = reg.params['const']
+p1_ols = reg.params['ESTATURA']
+# Define the function for the OLS line
+def ols_line(x, p0, p1):
+    return p0 + p1 * x
+
+
+x_plot = np.linspace(datax.min(), datax.max(), 100)
+plt.plot(x_plot, ols_line(x_plot, p0_ols, p1_ols), color="g", label="OLS perfect fit")
+plt.xlabel("ESTATURA")
+plt.ylabel("PESO")
+plt.legend()
+plt.show()
+
+____________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 16.  Regresión Múltiple con Variables altamente correlacionadas en la data**
+X = datos2[['ASISTENCIA2','ASISTENCIA1',"PARCIAL 1"]]   #  variables independientes
+y = datos2['PARCIAL 2']   #  variables dependientes
+
+
+# para obtener intercepción -- esto es opcional
+
+X = sm.add_constant(X)
+
+# ajustar el modelo de regresión
+
+reg = sm.OLS(y, X).fit()
+reg.summary()
+
+______________________________________________________________________
+
+Copia Texto
+
+[⬆️ Volver al inicio](#inicio)
+____________________________________________________________________
+
+Copia Texto
+
+# **Parte IV. Regresión Lineal Usando - Machine Learning**
+<a name="parte-iv-regresión-lineal--usando--machine-learning"></a>
+
+____________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 17. importando `train_test_split` desde `sklearn`**
+from sklearn.model_selection import train_test_split
+
+# nuestras variables independiente y dependiente
+X = datos2['ESTATURA']
+y = datos2['PESO']
+
+# para obtener intercepción -- esto es opcional
+
+X = sm.add_constant(X)
+
+
+# dividir los datos en entrenamiento y prueba
+
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42)
+______________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 18. Selección del método de Regresión Lineal de la Biblioteca scikit-learn**
+
+from sklearn.linear_model import LinearRegression
+
+# creando un objeto de la clase LinearRegression
+
+LR = LinearRegression()
+
+# ajustando los datos de entrenamiento
+
+LR.fit(x_train,y_train)
+
+# modelo de regresión
+modelo = LR.fit(x_train,y_train)
+
+________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 19. Evaluación del modelo entrenado sobre los datos de entrenamiento**
+from sklearn import metrics
+from sklearn import metrics # Import the metrics module
+
+y_prediction_train =  modelo.predict(x_train)
+print('Error Absoluto Medio en datos train es MAE =', metrics.mean_absolute_error(y_train,y_prediction_train))
+y_prediction_train
+y_prediction_train =np.array(y_prediction_train)
+df_train = pd.DataFrame(y_prediction_train)
+df_train
+______________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 20. Evaluación del modelo entrenado sobre los datos de prueba**
+y_prediction_test =  modelo.predict(x_test)
+print('Error Absoluto Medio en datos de prueba es MAE =', metrics.mean_absolute_error(y_test,y_prediction_test))
+y_prediction_test
+y_prediction_test =np.array(y_prediction_test)
+df_test = pd.DataFrame(y_prediction_test)
+df_test
+____________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 21. Importando r2_score module**
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+# predicting the accuracy score
+score=r2_score(y_test,y_prediction_test)
+print("El valor de R2 =",score)
+print("Error Cuadrático Medio MSE ==",mean_squared_error(y_test,y_prediction_test))
+print("Raiz Error Cuadrático Medio RMSE ==",np.sqrt(mean_squared_error(y_test,y_prediction_test)))
+
+____________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 22. Predicción total**
+y_prediction_all =  LR.predict(X)
+print(pd.DataFrame(np.array(y_prediction_all)))
+
+____________________________________________________________________
+
+Copia codigo
+
+
+# @title **Paso 23. Hacer el grafico de Dispersión pero usando Machine Learning obtenido**
+
+# Plotting using the Machine Learning results from Paso 18
+plt.figure(figsize=(30,6))
+plt.subplot(131)
+
+
+plt.scatter(datax, datay, label="data")
+
+
+# Get the predicted values for all data points using the trained ML model
+y_prediction_all =  LR.predict(X)
+
+
+# Sort the data by the independent variable (ESTATURA) to ensure the line is plotted correctly
+sorted_indices = np.argsort(datax)
+datax_sorted = datax.iloc[sorted_indices]
+y_prediction_all_sorted = y_prediction_all[sorted_indices]
+
+plt.plot(datax_sorted, y_prediction_all_sorted, color="orange", label="ML perfect fit")
+plt.xlabel("ESTATURA")
+plt.ylabel("PESO")
+plt.legend()
+plt.show()
+
+____________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 24. Un solo codigo trabaja los tres metodos de regresion lineal estudiados con los graficos**
+
+# Combinar los gráficos en una sola figura para comparación
+plt.figure(figsize=(15, 5))
+
+# Gráfico para optimize.curve_fit (Regresión 1)
+plt.subplot(1, 3, 1)
+plt.scatter(datax, datay, label="Datos", alpha=0.6)
+x0 = np.linspace(datax.min(), datax.max(), 100)
+plt.plot(x0, f(x0, *pfit3), color="r", label="curve_fit Reg.")
+plt.xlabel("ESTATURA")
+plt.ylabel("PESO")
+plt.title("Regresión Lineal con optimize.curve_fit")
+plt.legend()
+plt.grid(True)
+
+# Gráfico para OLS (Regresión 2)
+plt.subplot(1, 3, 2)
+plt.scatter(datax, datay, label="Datos", alpha=0.6)
+x_plot = np.linspace(datax.min(), datax.max(), 100)
+plt.plot(x_plot, ols_line(x_plot, p0_ols, p1_ols), color="g", label="OLS Reg.")
+plt.xlabel("ESTATURA")
+plt.ylabel("PESO")
+plt.title("Regresión Lineal con Minimos Cuadrados (OLS)")
+plt.legend()
+plt.grid(True)
+
+# Gráfico para Scikit-learn Linear Regression (Regresión 3)
+plt.subplot(1, 3, 3)
+plt.scatter(datax, datay, label="Datos", alpha=0.6)
+# Get the predicted values for all data points using the trained ML model
+y_prediction_all =  LR.predict(X) # Use the full X data here
+# Sort the data by the independent variable (ESTATURA) to ensure the line is plotted correctly
+sorted_indices = np.argsort(datax)
+datax_sorted = datax.iloc[sorted_indices]
+y_prediction_all_sorted = y_prediction_all[sorted_indices]
+plt.plot(datax_sorted, y_prediction_all_sorted, color="orange", label="ML Reg.")
+plt.xlabel("ESTATURA")
+plt.ylabel("PESO")
+plt.title("Regresión Lineal con Scikit-learn")
+plt.legend()
+plt.grid(True)
+
+
+plt.tight_layout() # Ajustar el diseño para evitar superposición
+plt.show()
+
+
+
+____________________________________________________________________
+
+Copia codigo
+
+
+# @title **Paso 25. Regresión Lineal con Bootstrap y Diagrama de Dispersión**
+
+# Definir la función para la regresión lineal
+def linear_model(x, a, b):
+  return a + b * x
+
+# Número de remuestreos bootstrap
+n_bootstrap = 1000
+
+# Listas para almacenar los coeficientes estimados de cada remuestreo
+bootstrap_a = []
+bootstrap_b = []
+
+# Realizar remuestreo bootstrap
+for _ in range(n_bootstrap):
+  # Muestrear con reemplazo de los datos originales
+  sample_indices = np.random.choice(len(datax), size=len(datax), replace=True)
+  bootstrap_x = datax.iloc[sample_indices]
+  bootstrap_y = datay.iloc[sample_indices]
+
+  # Ajustar el modelo lineal a la muestra bootstrap
+  try:
+    popt, pcov = optimize.curve_fit(linear_model, bootstrap_x, bootstrap_y)
+    bootstrap_a.append(popt[0])
+    bootstrap_b.append(popt[1])
+  except RuntimeError:
+    # Manejar casos donde curve_fit no converge
+    pass
+
+# Calcular los coeficientes promedio de bootstrap
+mean_a = np.mean(bootstrap_a)
+mean_b = np.mean(bootstrap_b)
+
+print(f"Coeficiente 'a' (Intercepto) promedio con Bootstrap: {mean_a:.4f}")
+print(f"Coeficiente 'b' (Pendiente) promedio con Bootstrap: {mean_b:.4f}")
+
+# Dibujar el diagrama de dispersión y la línea de regresión bootstrap
+plt.figure(figsize=(8, 6))
+plt.scatter(datax, datay, label="Datos", alpha=0.6)
+
+# Dibujar la línea de regresión basada en los coeficientes promedio de bootstrap
+x_plot = np.linspace(datax.min(), datax.max(), 100)
+plt.plot(x_plot, linear_model(x_plot, mean_a, mean_b), color="purple", label="Regresión Bootstrap")
+
+plt.xlabel("ESTATURA")
+plt.ylabel("PESO")
+plt.title("Diagrama de Dispersión y Regresión Lineal con Bootstrap")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Opcional: Visualizar la distribución de los coeficientes bootstrap
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+sns.histplot(bootstrap_a, kde=True)
+plt.xlabel("Coeficiente 'a' (Intercepto)")
+plt.title("Distribución Bootstrap del Intercepto")
+
+plt.subplot(1, 2, 2)
+sns.histplot(bootstrap_b, kde=True)
+plt.xlabel("Coeficiente 'b' (Pendiente)")
+plt.title("Distribución Bootstrap de la Pendiente")
+
+plt.tight_layout()
+plt.show()
+
+
+____________________________________________________________________
+
+Copia codigo
+
+# @title **Paso 26.  Los cuatro metodos de regresion vistos, los parametros calculados, AIC y el valor de R2**
+# nuestras variables independiente y dependiente
+
+X_estatura = datos2['ESTATURA'] # Usar un nombre diferente para la variable independiente en este paso
+y_peso = datos2['PESO'] # Usar un nombre diferente para la variable dependiente en este paso
+
+# para obtener intercepción -- esto es opcional
+
+X_estatura = sm.add_constant(X_estatura)
+
+# ajustar el modelo de regresión y almacenar en una nueva variable
+reg_estatura_peso = sm.OLS(y_peso, X_estatura).fit()
+reg_estatura_peso.summary()
+# Crear un diccionario para almacenar los resultados
+results = {
+    'Método': [],
+    'Parámetro A (Intercepto)': [],
+    'Parámetro B (Pendiente)': [],
+    'Error Estándar A': [],
+    'Error Estándar B': [],
+    'AIC': [],
+    'R2': []
+}
+
+# --- Método 1: optimize.curve_fit ---
+# Los parámetros y sus errores ya se calcularon en pfit3 y perr
+results['Método'].append('optimize.curve_fit')
+results['Parámetro A (Intercepto)'].append(pfit3[0])
+results['Parámetro B (Pendiente)'].append(pfit3[1])
+results['Error Estándar A'].append(perr[0])
+results['Error Estándar B'].append(perr[1])
+# curve_fit no proporciona AIC directamente, se puede calcular pero requiere más pasos.
+# Para simplificar, lo marcamos como no disponible.
+results['AIC'].append('N/A')
+results['R2'].append(r2_score(datay, f( datax, *pfit3))) # R2 calculado en Paso 10
+
+
+# --- Método 2: Minimos Cuadrados (statsmodels OLS) ---
+# Los resultados del summary de OLS tienen los parámetros, errores estándar y AIC/R2
+# Usar la variable reg_estatura_peso que contiene los resultados del OLS para Estatura vs Peso
+results['Método'].append('Minimos Cuadrados (OLS)')
+results['Parámetro A (Intercepto)'].append(reg_estatura_peso.params['const'])
+results['Parámetro B (Pendiente)'].append(reg_estatura_peso.params['ESTATURA'])
+results['Error Estándar A'].append(reg_estatura_peso.bse['const'])
+results['Error Estándar B'].append(reg_estatura_peso.bse['ESTATURA'])
+results['AIC'].append(reg_estatura_peso.aic)
+results['R2'].append(reg_estatura_peso.rsquared)
+
+# --- Método 3: Machine Learning (scikit-learn LinearRegression) ---
+# scikit-learn da los coeficientes y R2, pero no errores estándar directos ni AIC
+# Ya se calculó en Pasos 18-21
+# Ensure LR.coef_ is handled correctly for single feature case
+results['Método'].append('Machine Learning (sklearn LR)')
+# Access intercept
+results['Parámetro A (Intercepto)'].append(LR.intercept_[0] if isinstance(LR.intercept_, np.ndarray) else LR.intercept_)
+# Access coefficient for the single feature ('ESTATURA')
+results['Parámetro B (Pendiente)'].append(LR.coef_[0][1] if isinstance(LR.coef_[0], np.ndarray) else (LR.coef_[1] if len(LR.coef_) > 1 else LR.coef_[0])) # Adjusted access for coefficient
+results['Error Estándar A'].append('N/A') # scikit-learn no da errores estándar directos
+results['Error Estándar B'].append('N/A') # scikit-learn no da errores estándar directos
+results['AIC'].append('N/A') # scikit-learn no da AIC directo
+results['R2'].append(r2_score(y_test, y_prediction_test)) # R2 calculado en Paso 21 (sobre datos de prueba)
+
+# --- Método 4: Bootstrap ---
+# Los coeficientes promedio de bootstrap se calcularon en Paso 25
+# Los errores estándar se pueden estimar a partir de la desviación estándar de las distribuciones bootstrap
+results['Método'].append('Bootstrap')
+results['Parámetro A (Intercepto)'].append(mean_a)
+results['Parámetro B (Pendiente)'].append(mean_b)
+results['Error Estándar A'].append(np.std(bootstrap_a)) # Estimado del error estándar via bootstrap
+results['Error Estándar B'].append(np.std(bootstrap_b)) # Estimado del error estándar via bootstrap
+results['AIC'].append('N/A') # Bootstrap no da AIC
+# Calcular R2 para el modelo con coeficientes promedio de bootstrap
+r2_bootstrap = r2_score(datay, linear_model(datax, mean_a, mean_b))
+results['R2'].append(r2_bootstrap)
+
+# Crear el DataFrame a partir del diccionario
+results_df = pd.DataFrame(results)
+
+# Formatear para mejor lectura (opcional)
+results_df = results_df.round(4)
+results_df['AIC'] = results_df['AIC'].apply(lambda x: round(x, 2) if isinstance(x, (int, float)) else x)
+
+
+# Mostrar la tabla
+print("\nTabla Comparativa de Métodos de Regresión")
+print(results_df.to_markdown(index=False))
+
+____________________________________________________________________
+
+FIN  codigo
+
+
